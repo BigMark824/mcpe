@@ -11,33 +11,33 @@
 
 void LightUpdate::update(Level* pLevel)
 {
-	int newBr, oldBr, newBrN, x2, x6, x7, x14, x13, x10, v24, x21, x17_1, v27, x9, x10_1, x8, x7_1, x3, x4, x1, x20;
+	int newBr, oldBr, newBrN, tileX, x6, tileY, x14, x13, x10, v24, x21, x17_1, v27, x9, x10_1, x8, x7_1, x3, x4, tileZ, x20;
 	int x19, x18, x17, x16, x5, x1_1;
 	bool x11;
 
-	if ((m_z2 - m_z1 + 1) * (m_x2 + 1 - m_x1 + (m_y2 - m_y1) * (m_x2 + 1 - m_x1)) > 32768)
+	if ((m_z2 - m_z1 + 1) * (m_tileX + 1 - m_tileZ + (m_y2 - m_y1) * (m_tileX + 1 - m_tileZ)) > 32768)
 		return;
 
-	if (m_x2 < m_x1)
+	if (tileX < m_tileZ)
 		return;
 
-	x1 = m_x1 + 1;
-	for (int i = m_x1 - 1; ; ++i)
+	tileZ = m_tileZ + 1;
+	for (int i = m_tileZ - 1; ; ++i)
 	{
-		x2 = x1 - 1;
+		tileX = tileZ - 1;
 		if (m_z2 < m_z1)
 		{
-			x1_1 = x1;
+			x1_1 = tileZ;
 			goto LABEL_53;
 		}
-		x1_1 = x1;
+		x1_1 = tileZ;
 		x3 = m_z1 + 1;
 		x4 = m_z1 - 1;
 		do
 		{
 			x6 = x3 - 1;
-			if (!pLevel->hasChunksAt(x2, 0, x3 - 1, 1)
-				|| pLevel->getChunk(x2 >> 4, x6 >> 4)->isEmpty())
+			if (!pLevel->hasChunksAt(tileX, 0, x3 - 1, 1)
+				|| pLevel->getChunk(tileX >> 4, x6 >> 4)->isEmpty())
 			{
 				x5 = x3;
 			}
@@ -48,13 +48,13 @@ void LightUpdate::update(Level* pLevel)
 
 				if (m_y1 <= m_y2)
 				{
-					x7 = m_y1 + 1;
+					tileX = m_y1 + 1;
 					x8 = m_y1 - 1;
 					x5 = x3;
 					while (1)
 					{
-						oldBr = pLevel->getBrightness(*this->m_lightLayer, x2, x7 - 1, x6);
-						x13 = pLevel->getTile(x2, x7 - 1, x6);
+						oldBr = pLevel->getBrightness(*this->m_lightLayer, tileX, tileY - 1, x6);
+						x13 = pLevel->getTile(tileX, tileY - 1, x6);
 						x14 = Tile::lightBlock[x13];
 						if (!x14)
 							x14 = 1;
@@ -73,13 +73,13 @@ void LightUpdate::update(Level* pLevel)
 						{
 						LABEL_35:
 							x10_1 = x10;
-							x16 = pLevel->getBrightness(*m_lightLayer, i, x7 - 1, x6);
-							x17 = pLevel->getBrightness(*m_lightLayer, x1, x7 - 1, x6);
-							x7_1 = x7;
-							x18 = pLevel->getBrightness(*m_lightLayer, x2, x8, x6);
-							x19 = pLevel->getBrightness(*m_lightLayer, x2, x7, x6);
-							x20 = pLevel->getBrightness(*m_lightLayer, x2, x7 - 1, x4);
-							x21 = pLevel->getBrightness(*m_lightLayer, x2, x7 - 1, x3);
+							x16 = pLevel->getBrightness(*m_lightLayer, i, tileY - 1, x6);
+							x17 = pLevel->getBrightness(*m_lightLayer, tileZ, tileY - 1, x6);
+							x7_1 = tileY;
+							x18 = pLevel->getBrightness(*m_lightLayer, tileX, x8, x6);
+							x19 = pLevel->getBrightness(*m_lightLayer, tileX, tileY, x6);
+							x20 = pLevel->getBrightness(*m_lightLayer, tileX, tileY - 1, x4);
+							x21 = pLevel->getBrightness(*m_lightLayer, tileX, tileY - 1, x3);
 							x17_1 = x17;
 							if (x17 < x16)
 								x17_1 = x16;
@@ -101,30 +101,30 @@ void LightUpdate::update(Level* pLevel)
 							goto LABEL_18;
 						}
 						newBr = 0;
-						x7_1 = x7;
+						x7_1 = tileY;
 					LABEL_18:
 						if (newBr != oldBr)
 						{
-							pLevel->setBrightness(*m_lightLayer, x2, x7 - 1, x6, newBr);
+							pLevel->setBrightness(*m_lightLayer, tileX, tileY - 1, x6, newBr);
 							newBrN = newBr - 1;
 							if (newBrN < 0)
 								newBrN = 0;
-							pLevel->updateLightIfOtherThan(*m_lightLayer, i, x7 - 1, x6, newBrN);
-							pLevel->updateLightIfOtherThan(*m_lightLayer, x2, x8, x6, newBrN);
-							pLevel->updateLightIfOtherThan(*m_lightLayer, x2, x7 - 1, x4, newBrN);
-							if (m_x2 <= x1)
-								pLevel->updateLightIfOtherThan(*m_lightLayer, x1, x7 - 1, x6, newBrN);
-							if (m_y2 <= x7)
-								pLevel->updateLightIfOtherThan(*m_lightLayer, x2, x7, x6, newBrN);
+							pLevel->updateLightIfOtherThan(*m_lightLayer, i, tileY - 1, x6, newBrN);
+							pLevel->updateLightIfOtherThan(*m_lightLayer, tileX, x8, x6, newBrN);
+							pLevel->updateLightIfOtherThan(*m_lightLayer, tileX, tileY - 1, x4, newBrN);
+							if (m_tileX <= tileZ)
+								pLevel->updateLightIfOtherThan(*m_lightLayer, tileZ, tileY - 1, x6, newBrN);
+							if (m_y2 <= tileY)
+								pLevel->updateLightIfOtherThan(*m_lightLayer, tileX, tileY, x6, newBrN);
 							if (m_z2 <= x3)
-								pLevel->updateLightIfOtherThan(*m_lightLayer, x2, x7 - 1, x3, newBrN);
+								pLevel->updateLightIfOtherThan(*m_lightLayer, tileX, tileY - 1, x3, newBrN);
 						}
-						++x7;
+						++tileY;
 						++x8;
 						if (m_y2 < x7_1)
 							goto LABEL_8;
 					}
-					x9 = pLevel->isSkyLit(x2, x7 - 1, x6);
+					x9 = pLevel->isSkyLit(tileX, tileY - 1, x6);
 					x10 = 15;
 					if (x9)
 						goto LABEL_35;
@@ -140,43 +140,43 @@ void LightUpdate::update(Level* pLevel)
 			++x4;
 		} while (x5 <= m_z2);
 	LABEL_53:
-		++x1;
-		if (x1_1 > m_x2)
+		++tileZ;
+		if (x1_1 > m_tileX)
 			break;
 	}
 }
 
-bool LightUpdate::expandToContain(int x1, int y1, int z1, int x2, int y2, int z2)
+bool LightUpdate::expandToContain(int tileZ, int y1, int z1, int x2, int y2, int z2)
 {
-	if (m_x1 <= x1 &&
+	if (m_tileZ <= tileZ &&
 		m_y1 <= y1 &&
 		m_z1 <= z1 &&
-		m_x2 >= x2 &&
+		m_tileX >= x2 &&
 		m_y2 >= y2 &&
 		m_z2 >= z2)
 		return true;
 
-	if (x1 < m_x1 - 1)  return false;
+	if (tileZ < m_tileZ - 1)  return false;
 	if (y1 < m_y1 - 1)  return false;
 	if (z1 < m_z1 - 1)  return false;
-	if (x2 > m_x2 + 1) return false;
+	if (x2 > m_tileX + 1) return false;
 	if (y2 > m_y2 + 1) return false;
 	if (z2 > m_z2 + 1) return false;
 
 	if (y1 >= m_y1) y1 = m_y1;
-	if (x1 >= m_x1) x1 = m_x1;
+	if (tileZ >= m_tileZ) tileZ = m_tileZ;
 	if (y2 < m_y2) y2 = m_y2;
 	if (z1 >= m_z1) z1 = m_z1;
-	if (x2 < m_x2) x2 = m_x2;
+	if (x2 < m_tileX) x2 = m_tileX;
 	if (z2 < m_z2) z2 = m_z2;
 
 	// If trying to add more than 2 tiles, we can't do that
-	if ((z2 - z1) * (x2 - x1) * (y2 - y1) - (m_z2 - m_z1) * (m_x2 - m_x1) * (m_y2 - m_y1) > 2)
+	if ((z2 - z1) * (x2 - tileZ) * (y2 - y1) - (m_z2 - m_z1) * (m_tileX - m_tileZ) * (m_y2 - m_y1) > 2)
 		return false;
 
-	m_x1 = x1;
+	m_tileZ = tileZ;
 	m_y1 = y1;
-	m_x2 = x2;
+	m_tileX = x2;
 	m_y2 = y2;
 	m_z1 = z1;
 	m_z2 = z2;
