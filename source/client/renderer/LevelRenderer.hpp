@@ -103,23 +103,23 @@ public:
 	void renderHitOutline(Player* pPlayer, const HitResult& hr, int, void*, float);
 
 public:
-	float field_4;
-	float field_8;
-	float field_C;
-	float field_10;
-	int field_14;
-	int field_18;
-	int field_1C;
-	int field_20;
-	std::vector<Chunk*> field_24;
-	int field_30;
+	float m_xOld;
+	float m_yOld;
+	float m_zOld;
+	float m_destroyProgress;
+	int m_noEntityRenderFrames;
+	int m_totalEntities;
+	int m_renderedEntities;
+	int m_culledEntities;
+	std::vector<Chunk*> m_renderChunks;
+	int m_cullStep;
 	RenderList m_renderList;
-	int field_54;
-	int field_58;
-	int field_5C;
-	int field_60;
-	int field_64;
-	int field_68;
+	int m_totalChunks;
+	int m_offscreenChunks;
+	int m_occludedChunks;
+	int m_renderedChunks;
+	int m_emptyChunks;
+	int m_chunkFixOffs;
 	int m_resortedMinX;
 	int m_resortedMinY;
 	int m_resortedMinZ;
@@ -132,13 +132,13 @@ public:
 	Chunk** field_98;
 	int m_chunksLength;
 	TileRenderer* m_pTileRenderer;
-	int field_A4;
-	int field_A8;
-	int field_AC;
+	int m_xChunks;
+	int m_yChunks;
+	int m_zChunks;
 	int field_B0;
 	Minecraft* m_pMinecraft;
-	bool field_B8;
-	int field_BC;
+	bool m_occlusionCheck;
+	int m_lastViewDistance;
 	int m_ticksSinceStart;
 	//...
 	int m_nBuffers;

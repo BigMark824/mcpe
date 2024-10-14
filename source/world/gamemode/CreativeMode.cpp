@@ -134,13 +134,13 @@ void CreativeMode::render(float f)
 	if (m_destroyProgress <= 0.0f)
 	{
 		m_pMinecraft->m_gui.field_8 = 0.0f;
-		m_pMinecraft->m_pLevelRenderer->field_10 = 0.0f;
+		m_pMinecraft->m_pLevelRenderer->m_destroyProgress = 0.0f;
 	}
 	else
 	{
 		float x = m_lastDestroyProgress + (m_destroyProgress - m_lastDestroyProgress) * f;
 		m_pMinecraft->m_gui.field_8 = x;
-		m_pMinecraft->m_pLevelRenderer->field_10 = x;
+		m_pMinecraft->m_pLevelRenderer->m_destroyProgress = x;
 	}
 }
 

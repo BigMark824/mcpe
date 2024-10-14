@@ -16,21 +16,21 @@
 
 LevelRenderer::LevelRenderer(Minecraft* pMC, Textures* pTexs)
 {
-	field_4 = -9999.0f;
-	field_8 = -9999.0f;
-	field_C = -9999.0f;
-	field_10 = 0.0f;
-	field_14 = 2;
-	field_18 = 0;
-	field_1C = 0;
-	field_20 = 0;
-	field_30 = 0;
-	field_54 = 0;
-	field_58 = 0;
-	field_5C = 0;
-	field_60 = 0;
-	field_64 = 0;
-	field_68 = 0;
+	m_xOld = -9999.0f;
+	m_yOld = -9999.0f;
+	m_zOld = -9999.0f;
+	m_destroyProgress = 0.0f;
+	m_noEntityRenderFrames = 2;
+	m_totalEntities = 0;
+	m_renderedEntities = 0;
+	m_culledEntities = 0;
+	m_cullStep = 0;
+	m_totalChunks = 0;
+	m_offscreenChunks = 0;
+	m_occludedChunks = 0;
+	m_renderedChunks = 0;
+	m_emptyChunks = 0;
+	m_chunkFixOffs = 0;
 	m_resortedMinX = 0;
 	m_resortedMinY = 0;
 	m_resortedMinZ = 0;
@@ -42,12 +42,12 @@ LevelRenderer::LevelRenderer(Minecraft* pMC, Textures* pTexs)
 	field_98 = nullptr;
 	m_chunksLength = 0;
 	m_pTileRenderer = nullptr;
-	field_A4 = 0;
-	field_A8 = 0;
-	field_AC = 0;
+	m_xChunks = 0;
+	m_yChunks = 0;
+	m_zChunks = 0;
 	field_B0 = 0;
-	field_B8 = false;
-	field_BC = -1;
+	m_occlusionCheck = false;
+	m_lastViewDistance = -1;
 	m_ticksSinceStart = 0;
 	m_nBuffers = 26136;
 
@@ -78,9 +78,9 @@ void LevelRenderer::generateSky()
 		for (int j = n * -p; j <= n * p; j += p)
 		{
 			t.vertex(float(i + 0.0f), 16.0f, float(j + 0.0f));
-			t.vertex(float(i + p)   , 16.0f, float(j + 0.0f));
-			t.vertex(float(i + p)   , 16.0f, float(j + p)   );
-			t.vertex(float(i + 0.0f), 16.0f, float(j + p)   );
+			t.vertex(float(i + p), 16.0f, float(j + 0.0f));
+			t.vertex(float(i + p), 16.0f, float(j + p));
+			t.vertex(float(i + 0.0f), 16.0f, float(j + p));
 
 			m_skyBufferCount += 4;
 		}
@@ -91,13 +91,13 @@ void LevelRenderer::generateSky()
 
 void LevelRenderer::deleteChunks()
 {
-	for (int i = 0; i < field_AC; i++)
+	for (int i = 0; i < m_zChunks; i++)
 	{
-		for (int j = 0; j < field_A8; j++)
+		for (int j = 0; j < m_yChunks; j++)
 		{
-			for (int k = 0; k < field_A4; k++)
+			for (int k = 0; k < m_xChunks; k++)
 			{
-				int index = k + field_A4 * (j + field_A8 * i);
+				int index = k + m_xChunks * (j + m_yChunks * i);
 				delete m_chunks[index];
 			}
 		}
@@ -121,13 +121,13 @@ void LevelRenderer::cull(Culler* pCuller, float f)
 			continue;
 
 		//@TODO: What does the shift do? (x % 4 == 0)?
-		if (!pChunk->m_bVisible || !((i + field_30) << 28))
+		if (!pChunk->m_bVisible || !((i + m_cullStep) << 28))
 		{
 			pChunk->cull(pCuller);
 		}
 	}
 
-	field_30++;
+	m_cullStep++;
 }
 
 void LevelRenderer::allChanged()
@@ -142,20 +142,20 @@ void LevelRenderer::allChanged()
 	TileRenderer::m_bFancyGrass = m_pMinecraft->getOptions()->m_bFancyGrass;
 	TileRenderer::m_bBiomeColors = m_pMinecraft->getOptions()->m_bBiomeColors;
 
-	field_BC = m_pMinecraft->getOptions()->m_iViewDistance;
+	m_lastViewDistance = m_pMinecraft->getOptions()->m_iViewDistance;
 
-	int x1 = 64 << (3 - field_BC);
+	int x1 = 64 << (3 - m_lastViewDistance);
 	if (x1 >= 400)
 		x1 = 400;
 
-	field_A4 = x1 / 16 + 1;
-	field_AC = x1 / 16 + 1;
-	field_A8 = 8;
+	m_xChunks = x1 / 16 + 1;
+	m_zChunks = x1 / 16 + 1;
+	m_yChunks = 8;
 
-	m_chunksLength = field_A8 * field_A4 * field_AC;
+	m_chunksLength = m_yChunks * m_xChunks * m_zChunks;
 	LOG_I("chunksLength: %d", m_chunksLength);
-	m_chunks = new Chunk* [m_chunksLength];
-	field_98 = new Chunk* [m_chunksLength];
+	m_chunks = new Chunk * [m_chunksLength];
+	field_98 = new Chunk * [m_chunksLength];
 
 	m_resortedMinX = 0;
 	m_resortedMinY = 0;
@@ -163,26 +163,26 @@ void LevelRenderer::allChanged()
 
 	field_88.clear();
 
-	m_resortedMaxX = field_A4;
-	m_resortedMaxY = field_AC;
-	m_resortedMaxZ = field_A8;
+	m_resortedMaxX = m_xChunks;
+	m_resortedMaxY = m_zChunks;
+	m_resortedMaxZ = m_yChunks;
 
 	int x2 = 0, x3 = 0;
 
-	for (int i = 0; i < field_A4; i++)
+	for (int i = 0; i < m_xChunks; i++)
 	{
-		if (field_A8 <= 0)
+		if (m_yChunks <= 0)
 			continue;
 
-		for (int j = 0; j < field_A8; j++)
+		for (int j = 0; j < m_yChunks; j++)
 		{
-			for (int k = 0; k < field_AC; k++)
+			for (int k = 0; k < m_zChunks; k++)
 			{
-				int index = i + field_A4 * (j + field_A8 * k);
+				int index = i + m_xChunks * (j + m_yChunks * k);
 
 				Chunk* pChunk = new Chunk(m_pLevel, 16 * i, 16 * j, 16 * k, 16, x3 + field_B0, &m_pBuffers[x3]);
 
-				if (field_B8)
+				if (m_occlusionCheck)
 					pChunk->field_50 = 0;
 
 				pChunk->field_4E = false;
@@ -210,7 +210,7 @@ void LevelRenderer::allChanged()
 		}
 	}
 
-	field_14 = 2;
+	m_noEntityRenderFrames = 2;
 }
 
 void LevelRenderer::resortChunks(int x, int y, int z)
@@ -225,10 +225,10 @@ void LevelRenderer::resortChunks(int x, int y, int z)
 	m_resortedMaxY = 0x80000000;
 	m_resortedMaxZ = 0x80000000;
 
-	int blkCount = field_A4 * 16;
+	int blkCount = m_xChunks * 16;
 	int blkCntHalf = blkCount / 2;
 
-	for (int fx = 0; fx < field_A4; fx++)
+	for (int fx = 0; fx < m_xChunks; fx++)
 	{
 		int x1 = 16 * fx;
 		int x2 = x1 + blkCntHalf - x;
@@ -241,7 +241,7 @@ void LevelRenderer::resortChunks(int x, int y, int z)
 		if (m_resortedMaxX < x1)
 			m_resortedMaxX = x1;
 
-		for (int fz = 0; fz < field_AC; fz++)
+		for (int fz = 0; fz < m_zChunks; fz++)
 		{
 			int z1 = 16 * fz;
 			int z2 = z1 + blkCntHalf - z;
@@ -254,7 +254,7 @@ void LevelRenderer::resortChunks(int x, int y, int z)
 			if (m_resortedMaxZ < z1)
 				m_resortedMaxZ = z1;
 
-			for (int fy = 0; fy < field_A8; fy++)
+			for (int fy = 0; fy < m_yChunks; fy++)
 			{
 				int y1 = 16 * fy;
 				if (m_resortedMinY > y1)
@@ -262,7 +262,7 @@ void LevelRenderer::resortChunks(int x, int y, int z)
 				if (m_resortedMaxY < y1)
 					m_resortedMaxY = y1;
 
-				Chunk* pChunk = m_chunks[(fz * field_A8 + fy) * field_A4 + fx];
+				Chunk* pChunk = m_chunks[(fz * m_yChunks + fy) * m_xChunks + fx];
 				bool wasDirty = pChunk->isDirty();
 				pChunk->setPos(x1, y1, z1);
 
@@ -285,10 +285,10 @@ std::string LevelRenderer::gatherStats1()
 	//@NOTE: This data is based on the Java Edition pre-1.8 legend. This may not be accurate, but it's a good guideline.
 	//See https://minecraft.fandom.com/wiki/Debug_screen#Pre-1.8_legend
 	std::stringstream ss;
-	ss  << "C: " << field_60 << "/" << field_54 // Number of chunk sections rendered over total number of chunks.
-		<< ". F: " << field_58 // Number of chunk sections loaded outside the viewing distance.
-		<< ", O: " << field_5C // Number of occluded chunk sections.
-		<< ", E: " << field_64 // Number of empty chunk sections.
+	ss << "C: " << m_renderedChunks << "/" << m_totalChunks // Number of chunk sections rendered over total number of chunks.
+		<< ". F: " << m_offscreenChunks // Number of chunk sections loaded outside the viewing distance.
+		<< ", O: " << m_occludedChunks // Number of occluded chunk sections.
+		<< ", E: " << m_emptyChunks // Number of empty chunk sections.
 		<< "\n";
 
 	return ss.str();
@@ -344,7 +344,7 @@ void LevelRenderer::renderSameAsLast(int a, float b)
 
 int LevelRenderer::renderChunks(int start, int end, int a, float b)
 {
-	field_24.clear();
+	m_renderChunks.clear();
 
 	int result = 0;
 	for (int i = start; i < end; i++)
@@ -352,28 +352,28 @@ int LevelRenderer::renderChunks(int start, int end, int a, float b)
 		Chunk* pChunk = field_98[i];
 		if (!a)
 		{
-			field_54++;
+			m_totalChunks++;
 			if (pChunk->field_1C[0])
 			{
-				field_64++;
+				m_emptyChunks++;
 			}
 			else if (pChunk->m_bVisible)
 			{
-				if (!field_B8 || pChunk->field_4D)
-					field_60++;
+				if (!m_occlusionCheck || pChunk->field_4D)
+					m_renderedChunks++;
 				else
-					field_5C++;
+					m_occludedChunks++;
 			}
 			else
 			{
-				field_58++;
+				m_offscreenChunks++;
 			}
 		}
 
 		if (!pChunk->field_1C[a] && pChunk->m_bVisible && pChunk->field_4D && pChunk->getList(a) >= 0)
 		{
 			result++;
-			field_24.push_back(pChunk);
+			m_renderChunks.push_back(pChunk);
 		}
 	}
 
@@ -386,9 +386,9 @@ int LevelRenderer::renderChunks(int start, int end, int a, float b)
 	m_renderList.clear();
 	m_renderList.init(fPosX, fPosY, fPosZ);
 
-	for (int i = 0; i < int(field_24.size()); i++)
+	for (int i = 0; i < int(m_renderChunks.size()); i++)
 	{
-		Chunk* pChk = field_24[i];
+		Chunk* pChk = m_renderChunks[i];
 		m_renderList.addR(*pChk->getRenderChunk(a));
 		m_renderList.field_14++;
 	}
@@ -401,8 +401,8 @@ void LevelRenderer::render(Mob* pMob, int a, float b)
 {
 	for (int i = 0; i < 10; i++)
 	{
-		field_68 = (field_68 + 1) % m_chunksLength;
-		Chunk* pChunk = m_chunks[field_68];
+		m_chunkFixOffs = (m_chunkFixOffs + 1) % m_chunksLength;
+		Chunk* pChunk = m_chunks[m_chunkFixOffs];
 
 		if (!pChunk->m_bDirty)
 			continue;
@@ -414,34 +414,34 @@ void LevelRenderer::render(Mob* pMob, int a, float b)
 		field_88.push_back(pChunk);
 	}
 
-	if (m_pMinecraft->getOptions()->m_iViewDistance != field_BC)
+	if (m_pMinecraft->getOptions()->m_iViewDistance != m_lastViewDistance)
 		allChanged();
 
 	if (!a)
-		field_54 = field_58 = field_5C = field_60 = field_64 = 0;
+		m_totalChunks = m_offscreenChunks = m_occludedChunks = m_renderedChunks = m_emptyChunks = 0;
 
 	float mobX2 = pMob->field_98.x + (pMob->m_pos.x - pMob->field_98.x) * b;
 	float mobY2 = pMob->field_98.y + (pMob->m_pos.y - pMob->field_98.y) * b;
 	float mobZ2 = pMob->field_98.z + (pMob->m_pos.z - pMob->field_98.z) * b;
 
-	float dX = pMob->m_pos.x - field_4, dY = pMob->m_pos.y - field_8, dZ = pMob->m_pos.z - field_C;
+	float dX = pMob->m_pos.x - m_xOld, dY = pMob->m_pos.y - m_yOld, dZ = pMob->m_pos.z - m_zOld;
 
 	if (dX * dX + dY * dY + dZ * dZ > 16.0f)
 	{
-		field_4 = pMob->m_pos.x;
-		field_8 = pMob->m_pos.y;
-		field_C = pMob->m_pos.z;
+		m_xOld = pMob->m_pos.x;
+		m_yOld = pMob->m_pos.y;
+		m_zOld = pMob->m_pos.z;
 
 		resortChunks(Mth::floor(pMob->m_pos.x), Mth::floor(pMob->m_pos.y), Mth::floor(pMob->m_pos.z));
 		std::sort(&field_98[0], &field_98[m_chunksLength], DistanceChunkSorter(pMob));
 	}
 
 	// @NOTE: Field_B8 doesn't appear to be used??
-	if (field_B8 && !a && !m_pMinecraft->getOptions()->m_bAnaglyphs)
+	if (m_occlusionCheck && !a && !m_pMinecraft->getOptions()->m_bAnaglyphs)
 	{
 		int c = 16;
 		checkQueryResults(0, c);
-		
+
 		// @HUH: why 16?
 		for (int i = 0; i < c; i++)
 			field_98[i]->field_4D = true;
@@ -488,7 +488,7 @@ void LevelRenderer::render(Mob* pMob, int a, float b)
 
 				if (m_ticksSinceStart % roughDist != i % roughDist)
 					continue;
-				
+
 				float fXdiff, fYdiff, fZdiff;
 				fXdiff = float(m_chunks[i]->m_pos.x) - mobX2 - lastX;
 				fYdiff = float(m_chunks[i]->m_pos.y) - mobY2 - lastY;
@@ -506,8 +506,7 @@ void LevelRenderer::render(Mob* pMob, int a, float b)
 				m_chunks[i]->renderBB();
 				m_chunks[i]->field_4E = true;
 			}
-		}
-		while (c < m_chunksLength);
+		} while (c < m_chunksLength);
 	}
 	else
 	{
@@ -520,9 +519,9 @@ void LevelRenderer::setLevel(Level* level)
 	if (m_pLevel)
 		m_pLevel->removeListener(this);
 
-	field_4 = -9999.0f;
-	field_8 = -9999.0f;
-	field_C = -9999.0f;
+	m_xOld = -9999.0f;
+	m_yOld = -9999.0f;
+	m_zOld = -9999.0f;
 
 	EntityRenderDispatcher::getInstance()->setLevel(level);
 	EntityRenderDispatcher::getInstance()->setMinecraft(m_pMinecraft);
@@ -550,23 +549,23 @@ void LevelRenderer::setDirty(int x1, int y1, int z1, int x2, int y2, int z2)
 
 	for (int x = x1c; x <= x2c; x++)
 	{
-		int x1 = x % field_A4;
+		int x1 = x % m_xChunks;
 		if (x1 < 0)
-			x1 += field_A4;
+			x1 += m_xChunks;
 
 		for (int y = y1c; y <= y2c; y++)
 		{
-			int y1 = y % field_A8;
+			int y1 = y % m_yChunks;
 			if (y1 < 0)
-				y1 += field_A8;
+				y1 += m_yChunks;
 
 			for (int z = z1c; z <= z2c; z++)
 			{
-				int z1 = z % field_AC;
+				int z1 = z % m_zChunks;
 				if (z1 < 0)
-					z1 += field_AC;
+					z1 += m_zChunks;
 
-				Chunk* pChunk = m_chunks[x1 + field_A4 * (y1 + field_A8 * z1)];
+				Chunk* pChunk = m_chunks[x1 + m_xChunks * (y1 + m_yChunks * z1)];
 				if (pChunk->isDirty())
 					continue;
 
@@ -616,7 +615,7 @@ bool LevelRenderer::updateDirtyChunks(Mob* pMob, bool b)
 				// insert it
 				if (--j <= 0)
 					continue;
-				
+
 				for (int k = j; --k != 0;) {
 					pChunks[k - 1] = pChunks[k];
 				}
@@ -709,7 +708,7 @@ void LevelRenderer::renderHit(Player* pPlayer, const HitResult& hr, int i, void*
 	// @BUG: possible leftover from Minecraft Classic? This is overridden anyways
 	glColor4f(1.0f, 1.0f, 1.0f, 0.5f * (0.4f + 0.2f * Mth::sin(float(getTimeMs()) / 100.0f)));
 
-	if (!i && field_10 > 0.0f)
+	if (!i && m_destroyProgress > 0.0f)
 	{
 		glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
 
@@ -735,7 +734,7 @@ void LevelRenderer::renderHit(Player* pPlayer, const HitResult& hr, int i, void*
 		if (!pTile)
 			pTile = Tile::rock;
 
-		m_pTileRenderer->tesselateInWorld(pTile, hr.m_tileX, hr.m_tileY, hr.m_tileZ, 240 + int(field_10 * 10.0f));
+		m_pTileRenderer->tesselateInWorld(pTile, hr.m_tileX, hr.m_tileY, hr.m_tileZ, 240 + int(m_destroyProgress * 10.0f));
 
 		t.draw();
 		t.offset(0, 0, 0);
@@ -813,7 +812,7 @@ void LevelRenderer::renderHitOutline(Player* pPlayer, const HitResult& hr, int i
 
 	// Maximize Line Width
 	glEnable(GL_LINE_SMOOTH);
-	
+
 	float range[2];
 	glGetFloatv(GL_SMOOTH_LINE_WIDTH_RANGE, range);
 
@@ -856,9 +855,9 @@ void LevelRenderer::tileChanged(int x, int y, int z)
 
 void LevelRenderer::renderEntities(Vec3 pos, Culler* culler, float f)
 {
-	if (field_14 > 0)
+	if (m_noEntityRenderFrames > 0)
 	{
-		field_14--;
+		m_noEntityRenderFrames--;
 		return;
 	}
 
@@ -866,18 +865,18 @@ void LevelRenderer::renderEntities(Vec3 pos, Culler* culler, float f)
 
 	EntityRenderDispatcher::getInstance()->prepare(m_pLevel, m_pMinecraft->m_pTextures, m_pMinecraft->m_pFont, mob, m_pMinecraft->getOptions(), f);
 
-	field_18 = 0;
-	field_1C = 0;
-	field_20 = 0;
+	m_totalEntities = 0;
+	m_renderedEntities = 0;
+	m_culledEntities = 0;
 
 	EntityRenderDispatcher::xOff = mob->field_98.x + (mob->m_pos.x - mob->field_98.x) * f;
 	EntityRenderDispatcher::yOff = mob->field_98.y + (mob->m_pos.y - mob->field_98.y) * f;
 	EntityRenderDispatcher::zOff = mob->field_98.z + (mob->m_pos.z - mob->field_98.z) * f;
 
 	EntityVector* pVec = m_pLevel->getAllEntities();
-	field_18 = int(pVec->size());
+	m_totalEntities = int(pVec->size());
 
-	for (int i = 0; i < field_18; i++)
+	for (int i = 0; i < m_totalEntities; i++)
 	{
 		Entity* pEnt = (*pVec)[i];
 		if (!pEnt->shouldRender(pos))
@@ -891,7 +890,7 @@ void LevelRenderer::renderEntities(Vec3 pos, Culler* culler, float f)
 
 		if (m_pLevel->hasChunkAt(Mth::floor(pEnt->m_pos.x), Mth::floor(pEnt->m_pos.y), Mth::floor(pEnt->m_pos.z)))
 		{
-			field_1C++;
+			m_renderedEntities++;
 			EntityRenderDispatcher::getInstance()->render(pEnt, f);
 		}
 	}
@@ -1071,7 +1070,7 @@ void LevelRenderer::renderClouds(float f)
 
 	float offX = Mth::Lerp(m_pMinecraft->m_pMobPersp->field_3C.x, m_pMinecraft->m_pMobPersp->m_pos.x, f) + (float(m_ticksSinceStart) + f) * 0.3f;
 	float offZ = Mth::Lerp(m_pMinecraft->m_pMobPersp->field_3C.z, m_pMinecraft->m_pMobPersp->m_pos.z, f);
-	
+
 	int dx2048 = Mth::floor(offX / 2048.0f);
 	int dz2048 = Mth::floor(offZ / 2048.0f);
 
