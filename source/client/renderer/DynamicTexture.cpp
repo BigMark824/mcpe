@@ -9,7 +9,7 @@
 #include "DynamicTexture.hpp"
 #include "common/Utils.hpp"
 
-DynamicTexture::DynamicTexture(int a2) : m_textureIndex(a2)
+DynamicTexture::DynamicTexture(int tex) : m_textureIndex(tex)
 {
 	m_textureSize = 1;
 

@@ -1111,7 +1111,7 @@ void LevelRenderer::skyColorChanged()
 	for (int i = 0; i < m_chunksLength; i++)
 	{
 		Chunk* pChunk = m_chunks[i];
-		if (!pChunk->field_54)
+		if (!pChunk->m_skyLit)
 			continue;
 
 		if (pChunk->isDirty())

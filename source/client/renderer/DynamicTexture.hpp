@@ -21,7 +21,7 @@ public:
 	virtual void tick() = 0;
 	virtual void bindTexture(Textures*);
 
-	DynamicTexture(int a2);
+	DynamicTexture(int tex);
 	virtual ~DynamicTexture();
 
 protected:
