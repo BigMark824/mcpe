@@ -353,7 +353,7 @@ int LevelRenderer::renderChunks(int start, int end, int a, float b)
 		if (!a)
 		{
 			m_totalChunks++;
-			if (pChunk->field_1C[0])
+			if (pChunk->m_bEmpty[0])
 			{
 				m_emptyChunks++;
 			}
@@ -370,7 +370,7 @@ int LevelRenderer::renderChunks(int start, int end, int a, float b)
 			}
 		}
 
-		if (!pChunk->field_1C[a] && pChunk->m_bVisible && pChunk->field_4D && pChunk->getList(a) >= 0)
+		if (!pChunk->m_bEmpty[a] && pChunk->m_bVisible && pChunk->field_4D && pChunk->getList(a) >= 0)
 		{
 			result++;
 			m_renderChunks.push_back(pChunk);

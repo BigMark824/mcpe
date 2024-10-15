@@ -43,24 +43,24 @@ public:
 public:
 	Level* m_pLevel;
 	Pos m_pos;
-	int field_10;
-	int field_14;
-	int field_18;
-	bool field_1C[2];
+	int m_xs;
+	int m_ys;
+	int m_zs;
+	bool m_bEmpty[2];
 	Pos m_pos2;
-	float field_2C;
+	float m_radius;
 	AABB m_aabb;
 	int field_48;
 	bool m_bVisible;
 	bool field_4D;
 	bool field_4E;
 	int field_50;
-	bool field_54;
+	bool m_skyLit;
 	RenderChunk m_renderChunks[2];
 	Tesselator* m_pTesselator;
-	int field_8C;
+	int m_lists;
 	GLuint* field_90;
-	bool field_94;
+	bool m_bCompiled;
 	bool m_bDirty;
 };
 
